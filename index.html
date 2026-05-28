@@ -432,7 +432,7 @@ if (_mobileAtLoad) {
     resetAfkTimer();
   }, { passive: true });
 
-  const DRAG_SPEED = 1.8; // strip moves faster than finger — raise for snappier feel
+  const DRAG_SPEED = 2.2; // strip moves faster than finger — raise for snappier feel
 
   // passive:false so we can preventDefault — stops Safari rubber-band bounce
   document.addEventListener('touchmove', e => {
