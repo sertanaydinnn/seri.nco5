@@ -391,38 +391,91 @@ function resetAfkTimer() {
 // Start AFK timer on load — if user never scrolls, screen fades after 3s
 resetAfkTimer();
 
-// ── SCROLL HANDLER ────────────────────────────────────────────────────────────
+// ── SHARED ────────────────────────────────────────────────────────────────────
 const scrollVeil = document.getElementById('scroll-veil');
-
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+function ease(t)  { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
 
-function onScroll() {
-  const scrollY = window.scrollY;
-  const vh      = window.innerHeight;
-  const vw      = window.innerWidth;
-  const mobile  = isMobile();
-  const cfg     = mobile ? CFG.mobile : CFG.desktop;
-  const sw      = getSlideWidth();
-  const delay   = getPhotoDelay();
+if (_mobileAtLoad) {
 
-  // 1. Orbit — always spin while scrolling
-  positionOrbit(scrollY * cfg.scrollFactor);
+  // ── MOBILE: pure touch-driven ─────────────────────────────────────────────
+  // No native scroll — we drive everything from touch deltas directly.
+  document.body.style.overflow = 'hidden';
 
-  // 2. Veil
-  scrollVeil.style.opacity = clamp(1 - scrollY / delay, 0, 1);
+  let posX        = 0;   // current strip translateX
+  let dragOriginX = 0;   // clientX at touchstart
+  let dragStartX  = 0;   // posX at touchstart
+  let lastTX      = 0;   // previous touch clientX (for velocity)
+  let vel         = 0;   // px per frame momentum
+  let rafId       = null;
 
-  // 3. Strip — translate3d hints GPU compositor for smoother compositing
-  const translateX = clamp(
-    Math.max(0, scrollY - delay) * SCROLL_PER_SLIDE,
-    0,
-    getMaxTranslate()
-  );
-  strip.style.transform = `translate3d(-${translateX}px, 0, 0)`;
+  function applyMobile(x) {
+    posX = clamp(x, 0, getMaxTranslate());
+    const sw = getSlideWidth();
 
-  // 4. Scale + z-index — desktop only
-  //    On mobile photosVisible=1 so there's nothing to overlap; skip entirely
-  if (!mobile) {
+    // Orbit — use same visual speed as scroll-driven version
+    positionOrbit(posX * CFG.mobile.scrollFactor / SCROLL_PER_SLIDE);
+
+    // Veil fades over first slide width of movement
+    scrollVeil.style.opacity = clamp(1 - posX / sw, 0, 1);
+
+    // Strip
+    strip.style.transform = `translate3d(-${posX}px, 0, 0)`;
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    vel         = 0;
+    dragOriginX = e.touches[0].clientX;
+    dragStartX  = posX;
+    lastTX      = dragOriginX;
+    resetAfkTimer();
+  }, { passive: true });
+
+  // passive:false so we can preventDefault — stops Safari rubber-band bounce
+  document.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const tx = e.touches[0].clientX;
+    vel      = lastTX - tx;          // positive = swiping left (forward)
+    lastTX   = tx;
+    applyMobile(dragStartX + (dragOriginX - tx));
+    resetAfkTimer();
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    function glide() {
+      if (Math.abs(vel) < 0.4) return;
+      vel  *= 0.92;                  // friction — tweak 0.88–0.95 for feel
+      applyMobile(posX + vel);
+      rafId = requestAnimationFrame(glide);
+    }
+    rafId = requestAnimationFrame(glide);
+  }, { passive: true });
+
+  applyMobile(0);
+  resetAfkTimer();
+
+} else {
+
+  // ── DESKTOP: scroll-driven ────────────────────────────────────────────────
+  function onScroll() {
+    const scrollY = window.scrollY;
+    const vw      = window.innerWidth;
+    const cfg     = CFG.desktop;
+    const sw      = getSlideWidth();
+    const delay   = getPhotoDelay();
+
+    positionOrbit(scrollY * cfg.scrollFactor);
+    scrollVeil.style.opacity = clamp(1 - scrollY / delay, 0, 1);
+
+    const translateX = clamp(
+      Math.max(0, scrollY - delay) * SCROLL_PER_SLIDE,
+      0,
+      getMaxTranslate()
+    );
+    strip.style.transform = `translate3d(-${translateX}px, 0, 0)`;
+
+    // Scale + z-index overlap effect
     const screenCenter = translateX + vw / 2;
     for (let i = 0; i < slides.length; i++) {
       const slideCenter = i * sw + sw / 2;
@@ -435,21 +488,20 @@ function onScroll() {
       slides[i].style.zIndex       = Math.round(200 - dist * 100);
     }
   }
+
+  let scrollRaf = null;
+  window.addEventListener('scroll', () => {
+    if (!scrollRaf) {
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = null;
+        resetAfkTimer();
+        onScroll();
+      });
+    }
+  }, { passive: true });
+
+  onScroll();
 }
-
-// rAF throttle — scroll handler does almost nothing; all DOM work happens in rAF
-let scrollRaf = null;
-window.addEventListener('scroll', () => {
-  if (!scrollRaf) {
-    scrollRaf = requestAnimationFrame(() => {
-      scrollRaf = null;
-      resetAfkTimer(); // timer ops inside rAF, not in the hot scroll handler
-      onScroll();
-    });
-  }
-}, { passive: true });
-
-onScroll();
 
 </script>
 
