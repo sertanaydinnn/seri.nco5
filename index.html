@@ -432,13 +432,15 @@ if (_mobileAtLoad) {
     resetAfkTimer();
   }, { passive: true });
 
+  const DRAG_SPEED = 1.8; // strip moves faster than finger — raise for snappier feel
+
   // passive:false so we can preventDefault — stops Safari rubber-band bounce
   document.addEventListener('touchmove', e => {
     e.preventDefault();
     const tx = e.touches[0].clientX;
-    vel      = lastTX - tx;          // positive = swiping left (forward)
+    vel      = (lastTX - tx) * DRAG_SPEED; // positive = swiping left (forward)
     lastTX   = tx;
-    applyMobile(dragStartX + (dragOriginX - tx));
+    applyMobile(dragStartX + (dragOriginX - tx) * DRAG_SPEED);
     resetAfkTimer();
   }, { passive: false });
 
