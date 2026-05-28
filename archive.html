@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seri.nco — archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300&display=swap" rel="stylesheet">
+<style>
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: #000;
+  color: rgba(255,255,255,0.85);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  min-height: 100vh;
+}
+
+/* ── HEADER ──────────────────────────────────────────── */
+#header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 28px;
+  padding: 28px 40px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.85) 60%, transparent);
+  pointer-events: none;
+}
+
+#header a, #header span {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  text-decoration: none;
+  letter-spacing: 0.4em;
+  text-transform: lowercase;
+  pointer-events: all;
+}
+
+#back-link {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  transition: color 0.3s ease;
+}
+#back-link:hover { color: rgba(255,255,255,0.9); }
+
+#header-divider {
+  font-size: 11px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0;
+}
+
+#archive-heading {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+}
+
+/* ── GRID ────────────────────────────────────────────── */
+#grid {
+  padding: 100px 32px 80px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+/* ── STAGGER ENTRANCE ANIMATION ─────────────────────── */
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── PHOTO CELL ──────────────────────────────────────── */
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0; /* start hidden — JS sets animation */
+}
+
+.cell-img {
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #0a0a0a;
+  cursor: pointer;
+}
+
+.cell-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s ease, opacity 0.4s ease;
+  opacity: 0.88;
+}
+
+.cell-img:hover img {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.cell-label {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+/* ── FOOTER COUNT ────────────────────────────────────── */
+#footer {
+  text-align: center;
+  padding: 48px 0 64px;
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: rgba(255,255,255,0.2);
+  text-transform: lowercase;
+}
+
+/* ── LIGHTBOX ────────────────────────────────────────── */
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(0,0,0,0);
+  pointer-events: none;
+  transition: background 0.5s ease;
+}
+
+#lightbox.active {
+  background: rgba(0,0,0,0.93);
+  pointer-events: all;
+  cursor: zoom-out;
+}
+
+#lightbox-img {
+  max-width: 72vw;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 2px;
+  display: block;
+  opacity: 0;
+  transform: scale(0.88);
+  transition:
+    opacity  0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+#lightbox.active #lightbox-img {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#lightbox-label {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: rgba(255,255,255,0.35);
+  text-transform: lowercase;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity  0.55s 0.1s ease,
+    transform 0.55s 0.1s ease;
+  pointer-events: none;
+}
+
+#lightbox.active #lightbox-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#lightbox-ig {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: rgba(255,255,255,0.28);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: lowercase;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity   0.55s 0.18s ease,
+    transform 0.55s 0.18s ease,
+    color     0.3s ease;
+  pointer-events: none;
+}
+
+#lightbox.active #lightbox-ig {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+#lightbox-ig:hover { color: rgba(255,255,255,0.85); }
+
+#lightbox-ig svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* Close hint */
+#lightbox-close {
+  position: absolute;
+  top: 28px;
+  right: 36px;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: rgba(255,255,255,0.25);
+  opacity: 0;
+  transition: opacity 0.4s 0.2s ease;
+  pointer-events: none;
+}
+
+#lightbox.active #lightbox-close {
+  opacity: 1;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 1024px) {
+  #grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+}
+
+@media (max-width: 600px) {
+  #grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 88px 12px 60px;
+  }
+  #header { padding: 20px; gap: 16px; }
+  .cell-label { font-size: 8px; }
+  #lightbox-img { max-width: 92vw; max-height: 72vh; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="header">
+  <a id="back-link" href="index.html">seri.nco</a>
+  <span id="header-divider">/</span>
+  <span id="archive-heading">archive</span>
+</div>
+
+<div id="grid"></div>
+<div id="footer"></div>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <span id="lightbox-close">esc to close</span>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-label"></div>
+  <a id="lightbox-ig" href="https://www.instagram.com/seri.nco/?hl=tr" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4.5"/>
+      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+    </svg>
+    instagram
+  </a>
+</div>
+
+<script>
+const GOAL = 1000;
+
+// Raise MAX_PHOTOS when your collection grows past this number.
+// You never need to touch anything else — just drop the file in the folder.
+const MAX_PHOTOS = 1000;
+
+// Auto-generate photo1.jpg → photo{MAX_PHOTOS}.jpg
+const photos = Array.from({ length: MAX_PHOTOS }, (_, i) => `photo${i + 1}.jpg`);
+
+// ── BUILD GRID ───────────────────────────────────────────────────────────────
+const grid = document.getElementById('grid');
+
+let loadedCount     = 0;
+let visibleOrder    = 0;
+let batchRaf        = null;
+let initialDone     = false;
+const batchQueue    = [];
+
+function flushBatch() {
+  batchRaf = null;
+
+  if (!initialDone) {
+    // First flush — sort by DOM order so stagger always goes left→right top→bottom
+    batchQueue.sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+    );
+    batchQueue.forEach(cell => {
+      const rect       = cell.getBoundingClientRect();
+      const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inViewport) {
+        const order = visibleOrder++;
+        setTimeout(() => {
+          cell.style.animation = 'cell-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        }, order * 150);
+      } else {
+        // Below the fold on first load — no stagger
+        cell.style.animation = 'cell-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+      }
+    });
+    batchQueue.length = 0;
+    initialDone = true;
+  } else {
+    // Lazy-loaded cells that arrive later — animate immediately, no stagger
+    batchQueue.forEach(cell => {
+      cell.style.animation = 'cell-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+    });
+    batchQueue.length = 0;
+  }
+}
+
+photos.forEach((src, i) => {
+  const n = i + 1;
+
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  // Hide by default — only shown if image loads
+  cell.style.display = 'none';
+
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'cell-img';
+  imgWrap.dataset.src = src;
+  imgWrap.dataset.n   = n;
+
+  const img = document.createElement('img');
+  img.src     = src;
+  img.alt     = `${n} / ${GOAL}`;
+  img.loading = 'lazy';
+
+  // Show cell only when photo actually exists and loads
+  img.addEventListener('load', () => {
+    cell.style.display = '';
+    loadedCount++;
+    document.getElementById('footer').textContent = `${loadedCount} / ${GOAL}`;
+    // Queue this cell; the next animation frame batches all near-simultaneous
+    // loads together so they can be sorted by DOM order before staggering
+    batchQueue.push(cell);
+    if (batchRaf) cancelAnimationFrame(batchRaf);
+    batchRaf = requestAnimationFrame(flushBatch);
+  });
+
+  // Photo doesn't exist yet — keep cell hidden
+  img.addEventListener('error', () => {
+    cell.style.display = 'none';
+  });
+
+  imgWrap.appendChild(img);
+
+  const label = document.createElement('div');
+  label.className   = 'cell-label';
+  label.textContent = `${n} / ${GOAL}`;
+
+  cell.appendChild(imgWrap);
+  cell.appendChild(label);
+  grid.appendChild(cell);
+});
+
+// Footer starts empty — updates as photos load
+document.getElementById('footer').textContent = '';
+
+// Stagger is now handled inside each img 'load' event using visibleOrder.
+
+// ── LIGHTBOX ─────────────────────────────────────────────────────────────────
+const lightbox      = document.getElementById('lightbox');
+const lightboxImg   = document.getElementById('lightbox-img');
+const lightboxLabel = document.getElementById('lightbox-label');
+let   lbOpen        = false;
+
+function openLightbox(src, n) {
+  lightboxImg.src         = src;
+  lightboxLabel.textContent = `${n} / ${GOAL}`;
+  // Trigger reflow so transition fires
+  lightbox.getBoundingClientRect();
+  lightbox.classList.add('active');
+  lbOpen = true;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('active');
+  lbOpen = false;
+  document.body.style.overflow = '';
+}
+
+// Open on cell click
+grid.addEventListener('click', e => {
+  const wrap = e.target.closest('.cell-img');
+  if (!wrap) return;
+  openLightbox(wrap.dataset.src, wrap.dataset.n);
+});
+
+// Close on lightbox backdrop click (but not when clicking the IG link)
+lightbox.addEventListener('click', e => {
+  if (e.target.closest('#lightbox-ig')) return;
+  if (lbOpen) closeLightbox();
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && lbOpen) closeLightbox();
+});
+</script>
+
+</body>
+</html>
